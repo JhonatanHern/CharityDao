@@ -44,7 +44,9 @@ The project token used for voting. Just a regular ERC20 token that is given as a
 To install the dependencies, run the following command:
 
 `npm install`
-Testing
+
+## Testing
+
 To run the tests, run the following command:
 
 `npx hardhat test`
