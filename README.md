@@ -52,11 +52,11 @@ To run the tests, run the following command:
 Deployment
 To deploy the contracts to a local network, run the following command:
 
-`npx hardhat run scripts/deploy.js --network localhost`
+`npx hardhat run scripts/deployWithPaymentToken.js --network localhost`
 
 To deploy the contracts to a public network, edit the hardhat.config.js file with your network settings and private key, and run the following command:
 
-`npx hardhat run scripts/deploy.js --network <network-name`>
+`npx hardhat run scripts/deployWithPaymentToken.js --network <network-name>`
 
 ## Hardhat Tasks
 
@@ -64,20 +64,19 @@ To list the available tasks, run the following command:
 
 npx hardhat
 
-To create a new proposal, run the following command:
+To create a new proposal (if you posess an admin wallet), run the following command:
 
-`npx hardhat create-proposal --title "Title" --description "Description" --deadline 86400 --minvotes 1000 --optiona "Option A" --optionb "Option B"`
+```
+npx hardhat create-proposal --network mumbai --daoaddress 0x501F418B93A6758E2252c1dc86Be3f0617F63FCa --deadline 1622505600 --minimumvotes 100 --amount 100000000000000000000 --recipient 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
+```
 
-To vote on a proposal, run the following command:
-
-`npx hardhat vote --id 0 --choice true // vote for option A on proposal 0`
-
-To execute a proposal, run the following command:
-
-`npx hardhat execute --id 0 // execute proposal 0`
-
-To claim an NFT, run the following command:
-
-`npx hardhat claim-nft --id 0 // claim NFT for proposal 0`
-
-I
+Explained:
+```
+  npx hardhat create-proposal --daoaddress <dao-address> --deadline <deadline> --minimumvotes <minimum-votes> --amount <amount> --recipient <recipient>
+  daoaddress: 0x501F418B93A6758E2252c1dc86Be3f0617F63FCa - deployed address in mumbai testnet
+  deadline: 1622505600                                   - deadline in seconds since epoch
+  minimumvotes: 100                                      - minimum votes required for the proposal to pass
+  amount: 100000000000000000000                          - with the payment token decimals included. Default is 18
+  recipient: 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2  - address of the recipient of the tokens once the proposal is executed
+```
+For any other tasks use the user interface.
