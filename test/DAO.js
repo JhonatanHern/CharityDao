@@ -1,6 +1,9 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 
+const EXAMPLE_IPFS_HASH =
+  "bagaaierahgwoy4nfuxwc65do343cdbw7o5hfiyxr3fkxm74mw55pfnqotkia";
+
 describe("DAO", function () {
   let dao;
   let daoToken;
@@ -77,8 +80,19 @@ describe("DAO", function () {
       const amount = ethers.utils.parseEther("100");
       const recipient = user1.address;
 
-      await dao.createProposal(deadline, minimumVotes, amount, recipient);
+      await expect(
+        dao.createProposal(
+          deadline,
+          minimumVotes,
+          amount,
+          recipient,
+          EXAMPLE_IPFS_HASH
+        )
+      )
+        .to.emit(dao, "ProposalCreated")
+        .withArgs(0, deadline, minimumVotes, amount, recipient);
       const proposal = await dao.proposals(0);
+      expect(await dao.dataHashes("0")).to.equal(EXAMPLE_IPFS_HASH);
       expect(proposal.deadline).to.equal(deadline);
       expect(proposal.minimumVotes).to.equal(minimumVotes);
       expect(proposal.proposedDonationAmount).to.equal(amount);
@@ -96,7 +110,13 @@ describe("DAO", function () {
       await expect(
         dao
           .connect(user1)
-          .createProposal(deadline, minimumVotes, amount, recipient)
+          .createProposal(
+            deadline,
+            minimumVotes,
+            amount,
+            recipient,
+            EXAMPLE_IPFS_HASH
+          )
       ).to.be.revertedWith("Only admin");
     });
   });
@@ -108,7 +128,13 @@ describe("DAO", function () {
       const amount = ethers.utils.parseEther("100");
       const recipient = user1.address;
 
-      await dao.createProposal(deadline, minimumVotes, amount, recipient);
+      await dao.createProposal(
+        deadline,
+        minimumVotes,
+        amount,
+        recipient,
+        EXAMPLE_IPFS_HASH
+      );
       await dao.donate(ethers.utils.parseEther("100")); // donate 100 funding tokens
 
       const initialVoterBalance = await daoToken.balanceOf(owner.address);
@@ -138,7 +164,13 @@ describe("DAO", function () {
       const amount = ethers.utils.parseEther("100");
       const recipient = user1.address;
 
-      await dao.createProposal(deadline, minimumVotes, amount, recipient);
+      await dao.createProposal(
+        deadline,
+        minimumVotes,
+        amount,
+        recipient,
+        EXAMPLE_IPFS_HASH
+      );
 
       const proposalId = 0;
       const votes = 100;
@@ -158,7 +190,13 @@ describe("DAO", function () {
       const amount = ethers.utils.parseEther("100");
       const recipient = user1.address;
 
-      await dao.createProposal(deadline, minimumVotes, amount, recipient);
+      await dao.createProposal(
+        deadline,
+        minimumVotes,
+        amount,
+        recipient,
+        EXAMPLE_IPFS_HASH
+      );
 
       const proposalId = 0;
       const votes = 1000000;
@@ -178,7 +216,13 @@ describe("DAO", function () {
       const amount = ethers.utils.parseEther("100");
       const recipient = user1.address;
 
-      await dao.createProposal(deadline, minimumVotes, amount, recipient);
+      await dao.createProposal(
+        deadline,
+        minimumVotes,
+        amount,
+        recipient,
+        EXAMPLE_IPFS_HASH
+      );
 
       const proposalId = 0;
       const votes = 10;
@@ -207,7 +251,13 @@ describe("DAO", function () {
       amount = ethers.utils.parseEther("100");
       recipient = user1.address;
 
-      await dao.createProposal(deadline, minimumVotes, amount, recipient);
+      await dao.createProposal(
+        deadline,
+        minimumVotes,
+        amount,
+        recipient,
+        EXAMPLE_IPFS_HASH
+      );
     });
     it("should execute a proposal if it is approved", async function () {
       // donate 1000 funding tokens to obtain more voting tokens

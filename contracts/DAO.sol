@@ -21,6 +21,8 @@ contract DAO is AccessControl {
         bool executed;
     }
     mapping(uint256 => mapping(address => bool)) voted;
+    // proposal ID to IPFS data hash
+    mapping(uint256 => string) public dataHashes;
 
     Proposal[] public proposals;
 
@@ -48,7 +50,7 @@ contract DAO is AccessControl {
     }
 
     /**
-     * @dev Creates a new proposal in the DAO.
+     * @dev Creates a new proposal in the DAO. The IPFS data hash is not stored since it is not used in the contract.
      * @param _deadline The deadline for the proposal, specified as a timestamp.
      * @param _minimumVotes The minimum number of votes required for the proposal to pass.
      * @param _proposedDonationAmount The amount of donation proposed in the proposal.
@@ -58,7 +60,8 @@ contract DAO is AccessControl {
         uint256 _deadline,
         uint256 _minimumVotes,
         uint256 _proposedDonationAmount,
-        address _recipient
+        address _recipient,
+        string calldata _dataHash
     ) public onlyAdmin {
         proposals.push(
             Proposal({
@@ -71,8 +74,10 @@ contract DAO is AccessControl {
                 executed: false
             })
         );
+        uint proposalId = proposals.length - 1;
+        dataHashes[proposalId] = _dataHash;
         emit ProposalCreated(
-            proposals.length - 1,
+            proposalId,
             _deadline,
             _minimumVotes,
             _proposedDonationAmount,

@@ -1,5 +1,7 @@
 require("@nomicfoundation/hardhat-toolbox");
 require("@nomiclabs/hardhat-solhint");
+
+const { uploadToIPFS } = require("./lib/uploadToIPFS");
 const dotEnvConfig = require("dotenv").config;
 dotEnvConfig();
 
@@ -9,21 +11,24 @@ module.exports = {
   networks: {
     hardhat: {},
     mumbai: {
-      url: "https://rpc-mumbai.maticvigil.com", // Mumbai testnet RPC URL
+      url: process.env.MUMBAI_URL, // Mumbai testnet RPC URL
       accounts: [process.env.PRIVATE_KEY], // Replace with your account's private key
     },
   },
 };
 
 /*
-  npx hardhat create-proposal --daoaddress <dao-address> --deadline <deadline> --minimumvotes <minimum-votes> --amount <amount> --recipient <recipient>
-  daoaddress: 0x501F418B93A6758E2252c1dc86Be3f0617F63FCa - deployed address in mumbai testnet
-  deadline: 1622505600                                   - deadline in seconds since epoch
+  npx hardhat create-proposal --daoaddress <dao-address> --deadline <deadline> --minimumvotes <minimum-votes> --amount <amount> --recipient <recipient> --title <title> --description <description> --imageurl <image-url>
+  daoaddress: 0xe0B810e10420Da732e461db829FFa6349f4ABE80 - deployed address in mumbai testnet
+  deadline: 1622805600                                   - deadline in seconds since epoch
   minimumvotes: 100                                      - minimum votes required for the proposal to pass
   amount: 100000000000000000000                          - with the payment token decimals included. Default is 18
   recipient: 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2  - address of the recipient of the tokens once the proposal is executed
+  title: "Proposal title"                                - title for the proposal
+  description: "Proposal description"                    - description for the proposal
+  imageurl: "https://url.to/image"                       - URL to an image that conveys the proposal's message
   example:
-  npx hardhat create-proposal --network mumbai --daoaddress 0x501F418B93A6758E2252c1dc86Be3f0617F63FCa --deadline 1622505600 --minimumvotes 100 --amount 100000000000000000000 --recipient 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2
+  npx hardhat create-proposal --network mumbai --daoaddress 0xe0B810e10420Da732e461db829FFa6349f4ABE80 --deadline 1622805600 --minimumvotes 100 --amount 100000000000000000000 --recipient 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 --title "Proposal title" --description "Proposal description" --imageurl "https://url.to/image"
 */
 task("create-proposal", "Create a proposal in an existing DAO contract")
   .addParam("daoaddress", "The address of the DAO contract")
@@ -31,8 +36,20 @@ task("create-proposal", "Create a proposal in an existing DAO contract")
   .addParam("minimumvotes", "The minimum votes required for the proposal")
   .addParam("amount", "The amount of tokens to transfer")
   .addParam("recipient", "The recipient of the tokens")
+  .addParam("title", "The proposal's title")
+  .addParam("description", "The proposal's description")
+  .addParam("imageurl", "url to an image that conveys the proposal's message")
   .setAction(async (taskArgs, hre) => {
-    const { daoaddress, deadline, minimumvotes, amount, recipient } = taskArgs;
+    const {
+      daoaddress,
+      deadline,
+      minimumvotes,
+      amount,
+      recipient,
+      title,
+      description,
+      imageurl,
+    } = taskArgs;
     if (!daoaddress) {
       console.log("DAO contract address missing");
       return;
@@ -44,13 +61,32 @@ task("create-proposal", "Create a proposal in an existing DAO contract")
     const DAO = await hre.ethers.getContractFactory("DAO");
     const dao = DAO.attach(daoaddress);
 
+    // strings like title and description (and any other data) must be uploaded to IPFS to prevent high storage costs.
+    // only functional pieces of data must make it directly to the blockchain
+
+    const dataHash = await uploadToIPFS(
+      {
+        title: title || "",
+        description: description || "",
+        imageURL: imageurl || "",
+      },
+      process.env.PINATA_API_KEY,
+      process.env.PINATA_API_SECRET
+    );
+
+    console.log(`Proposal data uploaded to IPFS with hash: ${dataHash}`);
+
     const createProposalTx = await dao.createProposal(
       deadline,
       minimumvotes,
       amount,
-      recipient
+      recipient,
+      dataHash.toString()
     );
+
+    console.log("Waiting for proposal to be created...");
     const receipt = await createProposalTx.wait();
+    console.log("Proposal created!");
     const proposalCreatedEvent = receipt.events.find(
       (event) => event.event === "ProposalCreated"
     );
@@ -58,26 +94,4 @@ task("create-proposal", "Create a proposal in an existing DAO contract")
     console.log(
       `Proposal with ID: '${proposalCreatedEvent.args.proposalId.toNumber()}' created in DAO`
     );
-  });
-
-/*
-  npx hardhat executeProposal --daoaddress <dao-address> --proposalId <proposal-id>
-  daoaddress: 0x501F418B93A6758E2252c1dc86Be3f0617F63FCa - deployed address in mumbai testnet
-  proposalId: 0                                         - ID of the proposal to execute
-  example:
-  npx hardhat executeProposal --network mumbai --daoaddress 0x501F418B93A6758E2252c1dc86Be3f0617F63FCa --proposalId 0
-*/
-task("executeProposal", "Execute a proposal in the DAO")
-  .addParam("daoaddress", "Address of the DAO contract")
-  .addParam("proposalId", "ID of the proposal to execute")
-  .setAction(async (taskArgs) => {
-    const { daoaddress, proposalId } = taskArgs;
-
-    const DAO = await ethers.getContractFactory("DAO");
-    const dao = await DAO.attach(daoaddress);
-
-    const executeProposalTx = await dao.executeProposal(proposalId);
-    await executeProposalTx.wait();
-
-    console.log(`Proposal with ID: '${proposalId}' executed in DAO`);
   });
