@@ -1,4 +1,127 @@
-# Smart Charity DAO - Smart Contracts
+# Smart Charity DAO
+
+In order to run the entire project, three repositories are needed:
+- This one
+- https://github.com/JhonatanHern/CharityDaoFrontend (frontend)
+- https://github.com/JhonatanHern/CharityDaoBackend (backend)
+
+## Global setup
+
+After downloading the three repositories there are three steps for the setup:
+
+### 1 - .env files and package install
+Contracts:
+```
+PRIVATE_KEY=0x35dcf656a1fd701ca7bf9f60ffe98e0af8e7276ff7ca5bc109a7128d46641a3a
+MUMBAI_URL=https://polygon-mumbai.g.alchemy.com/v2/MPaBZ4P5gZB6xeldpNR6kazfV9K7xirV
+PINATA_API_KEY=0f4e89b5a43e1aef598c
+PINATA_API_SECRET=09ead9cd5e6fad321f05051a8ff72d1fd99b9f4a4f761e6586569e99218611a5
+```
+Frontend:
+```
+VITE_ALCHEMY_API_KEY=MPaBZ4P5gZB6xeldpNR6kazfV9K7xirV
+```
+Backend:
+```
+DAO_CONTRACT_ADDRESS=0xe0B810e10420Da732e461db829FFa6349f4ABE80
+RPC_URL=https://polygon-mumbai.g.alchemy.com/v2/MPaBZ4P5gZB6xeldpNR6kazfV9K7xirV
+PINATA_GATEWAY_ID=harlequin-official-deer-46
+```
+Add every .env file to the root folder of it's corresponding repository.
+
+Also, in each folder run `npm i`
+
+### 2 - Contract preparation (optional)
+
+If you are ok with using the existing smart contracts in the mumbai testnet, skip this step.
+
+from this repo's (CharityDao) root folder, run the next command:
+
+```
+npx hardhat run scripts/deployWithPaymentToken.js --network mumbai
+```
+
+the output should look like this:
+```
+payment token deployed
+DAO contract deployed
+Payment Token deployed to: PAYMENT_TOKEN_ADDRESS
+------------------------------
+DAO deployed to: DAO_ADDRESS
+DAO Token deployed to: DAO_TOKEN_ADDRESS
+DAO NFT deployed to: DAO_NFT_ADDRESS
+Deployment and tests completed successfully!
+```
+
+now copy the `DAO_ADDRESS` and paste it in the `CharityDaoBackend/.env` file to replace the current value of the `DAO_CONTRACT_ADDRESS` variable.
+
+Then open `CharityDaoFrontend/src/utils/contracts.ts` and change the corresponding variables to the address propery of each contract object like this:
+
+```
+import { erc20ABI } from "wagmi";
+
+export const paymentTokenContractConfig = {
+  address: "<PAYMENT_TOKEN_ADDRESS>",
+  ...
+} as const;
+
+export const daoTokenContractConfig = {
+  address: "<DAO_TOKEN_ADDRESS>",
+  ...
+} as const;
+
+export const DAOContractConfig = {
+  address: "<DAO_ADDRESS>",
+  ...
+} as const;
+```
+
+### 3 - Backend setup
+
+From the CharityDaoBackend repo's root folder run this command:
+
+```
+node index.js
+```
+
+### 4 - Frontend setup
+
+From the CharityDaoFrontend repo's root folder run this command:
+
+```
+node run dev
+```
+
+## Proposal creation
+
+While making sure that the backend server is on:
+
+- Go to this repo's root folder
+- Customize this command according to your needs:
+
+`  npx hardhat create-proposal --network mumbai  --daoaddress <dao-address> --deadline <deadline> --minimumvotes <minimum-votes> --amount <amount> --recipient <recipient> --title <title> --description <description> --imageurl <image-url>
+`
+Explanation for each variable:
+```
+  daoaddress: 0xe0B810e10420Da732e461db829FFa6349f4ABE80 - deployed address in mumbai testnet
+  deadline: 1622805600                                   - deadline in seconds since epoch
+  minimumvotes: 100                                      - minimum votes required for the proposal to pass
+  amount: 100000000000000000000                          - with the payment token decimals included. Default is 18
+  recipient: 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2  - address of the recipient of the tokens once the proposal is executed
+  title: "Proposal title"                                - title for the proposal
+  description: "Proposal description"                    - description for the proposal
+  imageurl: "https://picsum.photos/200"                  - URL to an image that conveys the proposal's message
+```
+
+Your command should look like this:
+`  npx hardhat create-proposal --network mumbai --daoaddress 0xe0B810e10420Da732e461db829FFa6349f4ABE80 --deadline 1622805600 --minimumvotes 100 --amount 100000000000000000000 --recipient 0xAb8483F64d9C6d1EcF9b849Ae677dD3315835cb2 --title "Proposal title" --description "Proposal description" --imageurl "https://picsum.photos/200"
+`
+
+- Run the command
+- Wait for the transaction to be executed and for the backend server to catch it (this could take a while because IPFS is used in the background to store some variables)
+- Refresh the frontend page to see the new project added
+
+# Smart Charity DAO - Contract Structure
 
 This project contains the smart contracts for a decentralized autonomous organization (DAO) that allows its token holders (ERC20) to vote on donation proposals.
 
